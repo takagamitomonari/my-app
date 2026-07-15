@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "tsx index.ts",
+    "build": "prisma generate",
+    "postinstall": "prisma generate",
     "db:dev": "prisma dev"
   },
   "dependencies": {

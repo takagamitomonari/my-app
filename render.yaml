@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: my-app
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          databaseName: my-app-db
+          databaseProvider: postgresql
+          databaseRegion: oregon
