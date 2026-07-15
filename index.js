@@ -28,6 +28,15 @@ app.post('/users', async (req, res) => {
   res.redirect('/');
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
+});
+
+server.on('error', (err) => {
+  if (err && err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use. Start the app with a different PORT or free the port.`);
+  } else {
+    console.error('Server error:', err);
+  }
+  process.exit(1);
 });
