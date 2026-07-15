@@ -4,14 +4,34 @@
   <meta charset="UTF-8">
   <title>マイ家計簿</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
-    .summary { display: flex; justify-content: space-between; background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-    .income { color: blue; }
-    .expense { color: red; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-    th { background-color: #eee; }
-    .form-container { background: #eef9fd; padding: 15px; border-radius: 8px; }
+    body { font-family: sans-serif; padding: 20px; max-width: 1080px; margin: 0 auto; background: #f6f8fb; color: #222; }
+    h1 { text-align: center; margin-bottom: 28px; }
+    .summary { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; background: #ffffff; padding: 18px; border-radius: 14px; margin-bottom: 24px; box-shadow: 0 1px 10px rgba(0,0,0,0.04); }
+    .summary div { flex: 1 1 220px; }
+    .summary strong { display: block; margin-bottom: 6px; font-size: 0.95rem; color: #555; }
+    .summary span, .summary strong:last-child { font-size: 1.16rem; }
+    .income { color: #1e70bf; }
+    .expense { color: #cc2d3e; }
+    .section-title { margin-top: 32px; margin-bottom: 14px; font-size: 1.18rem; }
+    .form-container { background: #ffffff; padding: 24px; border-radius: 14px; margin-bottom: 24px; display: grid; gap: 16px; }
+    .entry-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .form-container label { display: block; }
+    .form-container input,
+    .form-container select { width: 100%; padding: 10px 12px; border: 1px solid #ccd5df; border-radius: 8px; background: #fff; }
+    .form-container button { width: auto; padding: 10px 18px; border: none; border-radius: 8px; background: #1e70bf; color: #fff; font-weight: 600; }
+    .chart-row { display: grid; gap: 24px; margin-bottom: 24px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .chart-card { background: #ffffff; border: 1px solid #e5eaf0; border-radius: 14px; padding: 20px; box-shadow: 0 1px 10px rgba(0,0,0,0.04); }
+    .chart-card h4 { margin-top: 0; margin-bottom: 16px; font-size: 1.1rem; }
+    .chart-controls { margin-bottom: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .chart-controls label { font-size: 0.95rem; }
+    .chart-card canvas { width: 100%; height: auto !important; }
+    table { width: 100%; border-collapse: collapse; margin-top: 24px; font-size: 0.95rem; background: #fff; border-radius: 10px; overflow: hidden; }
+    th, td { border: 1px solid #edf0f4; padding: 12px 14px; text-align: left; }
+    th { background-color: #f6f8fb; color: #333; }
+    tbody tr:nth-child(odd) { background: #fbfcfe; }
+    tbody tr:hover { background: #eef3f8; }
+    button { cursor: pointer; padding: 8px 12px; border: 1px solid #aaa; border-radius: 6px; background: #fff; }
+    button:hover { background: #f2f2f2; }
   </style>
 </head>
 <body>
@@ -28,38 +48,70 @@
   <div class="form-container">
     <h3>新しい記録を追加</h3>
     <form action="/transactions" method="POST">
-      <label>収支:
-        <select name="type" required>
-          <option value="EXPENSE">支出</option>
-          <option value="INCOME">収入</option>
-        </select>
-      </label>
-      <label> カテゴリー:
-        <select name="category" required>
-          <option value="食費">食費</option>
-          <option value="趣味">趣味・娯楽</option>
-          <option value="交通費">交通費</option>
-          <option value="給料">給与・収入</option>
-          <option value="その他">その他</option>
-        </select>
-      </label>
-      <br><br>
-      <label>内容: <input type="text" name="title" placeholder="例: ラーメン" required></label>
-      <label>金額: <input type="number" name="amount" placeholder="1000" required></label>
+      <div class="entry-grid">
+        <label>収支:
+          <select name="type" required>
+            <option value="EXPENSE">支出</option>
+            <option value="INCOME">収入</option>
+          </select>
+        </label>
+        <label>カテゴリー:
+          <select name="category" required>
+            <option value="食費">食費</option>
+            <option value="趣味">趣味・娯楽</option>
+            <option value="交通費">交通費</option>
+            <option value="給料">給与・収入</option>
+            <option value="その他">その他</option>
+          </select>
+        </label>
+        <label>内容:
+          <input type="text" name="title" placeholder="例: ラーメン" required>
+        </label>
+        <label>金額:
+          <input type="number" name="amount" placeholder="1000" required>
+        </label>
+        <label>日付:
+          <input type="date" name="date" value="<%= today %>" required>
+        </label>
+      </div>
       <button type="submit">追加する</button>
     </form>
   </div>
 
   <!-- 履歴一覧 -->
   <h3>履歴</h3>
-  <canvas id="monthlyChart" width="800" height="300" style="max-width:100%;"></canvas>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h4>月別収支</h4>
+      <canvas id="monthlyChart" width="800" height="300" style="max-width:100%;"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-controls">
+        <h4>支出カテゴリ別円グラフ</h4>
+        <label>対象月: <input type="month" id="categoryMonth" value="<%= currentMonth %>"></label>
+      </div>
+      <canvas id="categoryChart" width="400" height="300" style="max-width:100%;"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-controls">
+        <h4>月別比較</h4>
+        <label>比較する月: <input type="month" id="compareMonth" value="<%= currentMonth %>"></label>
+      </div>
+      <canvas id="compareChart" width="800" height="300" style="max-width:100%;"></canvas>
+    </div>
+  </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+    let monthlyChart;
+    let categoryChart;
+    let compareChart;
+
     async function loadMonthly() {
       const res = await fetch('/api/monthly');
       const json = await res.json();
       const ctx = document.getElementById('monthlyChart').getContext('2d');
-      new Chart(ctx, {
+      if (monthlyChart) monthlyChart.destroy();
+      monthlyChart = new Chart(ctx, {
         type: 'bar',
         data: {
           labels: json.labels,
@@ -71,7 +123,53 @@
         options: { responsive: true }
       });
     }
+
+    async function loadCategory(month) {
+      const res = await fetch(`/api/category?month=${month}`);
+      const json = await res.json();
+      const ctx = document.getElementById('categoryChart').getContext('2d');
+      if (categoryChart) categoryChart.destroy();
+      categoryChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: json.categories,
+          datasets: [{ data: json.amounts, backgroundColor: ['#ff6384', '#ff9f40', '#4bc0c0', '#36a2eb', '#9966ff'] }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+    }
+
+    async function loadCompare(month) {
+      const res = await fetch(`/api/monthly-compare?month=${month}`);
+      const json = await res.json();
+      const ctx = document.getElementById('compareChart').getContext('2d');
+      if (compareChart) compareChart.destroy();
+      compareChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: json.labels,
+          datasets: [
+            { label: '収入', data: json.income, borderColor: 'rgba(54,162,235,1)', fill: false },
+            { label: '支出', data: json.expense, borderColor: 'rgba(255,99,132,1)', fill: false }
+          ]
+        },
+        options: { responsive: true }
+      });
+    }
+
+    document.getElementById('categoryMonth').addEventListener('change', (e) => {
+      loadCategory(e.target.value);
+    });
+    document.getElementById('compareMonth').addEventListener('change', (e) => {
+      loadCompare(e.target.value);
+    });
+
     loadMonthly();
+    loadCategory(document.getElementById('categoryMonth').value);
+    loadCompare(document.getElementById('compareMonth').value);
   </script>
   <table>
     <tr>
@@ -80,6 +178,7 @@
       <th>カテゴリー</th>
       <th>内容</th>
       <th>金額</th>
+      <th>操作</th>
     </tr>
     <% transactions.forEach(transaction => { %>
       <tr>
