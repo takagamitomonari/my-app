@@ -16,14 +16,26 @@ app.set('views', './views');
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/', async (req, res) => {
-  const users = await prisma.user.findMany();
-  res.render('index', { users });
+  try {
+    const transactions = await prisma.transaction.findMany({ orderBy: { date: 'desc' } });
+    const totalIncome = transactions.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + t.amount, 0);
+    const totalExpense = transactions.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + t.amount, 0);
+    const balance = totalIncome - totalExpense;
+    res.render('index', { transactions, totalIncome, totalExpense, balance });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('エラーが発生しました。');
+  }
 });
 
-app.post('/users', async (req, res) => {
-  const name = req.body.name;
-  if (name) {
-    await prisma.user.create({ data: { name } });
+app.post('/transactions', async (req, res) => {
+  const { title, amount, type, category } = req.body;
+  if (title && amount && type && category) {
+    try {
+      await prisma.transaction.create({ data: { title, amount: parseInt(amount, 10), type, category } });
+    } catch (error) {
+      console.error(error);
+    }
   }
   res.redirect('/');
 });
