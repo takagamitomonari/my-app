@@ -7,7 +7,16 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id   Int    @id @default(autoincrement())
-  name String
+// prisma/schema.prisma
+
+// ... (上部の generator や datasource の設定はそのまま残す) ...
+
+model Transaction {
+  id        Int       @id @default(autoincrement())
+  title     String // 用途（例：まかない代、マリノス戦チケット）
+  amount    Int // 金額
+  type      String // "INCOME"(収入) または "EXPENSE"(支出)
+  category  String // カテゴリー（食費、趣味、給料など）
+  date      DateTime  @default(now()) // 登録日時
+  deletedAt DateTime?
 }

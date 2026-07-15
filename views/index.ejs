@@ -1,16 +1,122 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head><meta charset="UTF-8"><title>わんこ名簿</title></head>
+<head>
+  <meta charset="UTF-8">
+  <title>マイ家計簿</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+    .summary { display: flex; justify-content: space-between; background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    .income { color: blue; }
+    .expense { color: red; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background-color: #eee; }
+    .form-container { background: #eef9fd; padding: 15px; border-radius: 8px; }
+  </style>
+</head>
 <body>
-  <h1>ユーザー一覧</h1>
-  <ul>
-    <% users.forEach(user => { %>
-      <li><%= user.name %></li>
+  <h1>マイ家計簿アプリ</h1>
+
+  <!-- 収支サマリー -->
+  <div class="summary">
+    <div><strong>収入合計:</strong> <span class="income">¥<%= totalIncome.toLocaleString() %></span></div>
+    <div><strong>支出合計:</strong> <span class="expense">¥<%= totalExpense.toLocaleString() %></span></div>
+    <div><strong>現在の残高:</strong> <strong>¥<%= balance.toLocaleString() %></strong></div>
+  </div>
+
+  <!-- 入力フォーム -->
+  <div class="form-container">
+    <h3>新しい記録を追加</h3>
+    <form action="/transactions" method="POST">
+      <label>収支:
+        <select name="type" required>
+          <option value="EXPENSE">支出</option>
+          <option value="INCOME">収入</option>
+        </select>
+      </label>
+      <label> カテゴリー:
+        <select name="category" required>
+          <option value="食費">食費</option>
+          <option value="趣味">趣味・娯楽</option>
+          <option value="交通費">交通費</option>
+          <option value="給料">給与・収入</option>
+          <option value="その他">その他</option>
+        </select>
+      </label>
+      <br><br>
+      <label>内容: <input type="text" name="title" placeholder="例: ラーメン" required></label>
+      <label>金額: <input type="number" name="amount" placeholder="1000" required></label>
+      <button type="submit">追加する</button>
+    </form>
+  </div>
+
+  <!-- 履歴一覧 -->
+  <h3>履歴</h3>
+  <canvas id="monthlyChart" width="800" height="300" style="max-width:100%;"></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    async function loadMonthly() {
+      const res = await fetch('/api/monthly');
+      const json = await res.json();
+      const ctx = document.getElementById('monthlyChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: json.labels,
+          datasets: [
+            { label: '収入', data: json.income, backgroundColor: 'rgba(54,162,235,0.6)' },
+            { label: '支出', data: json.expense, backgroundColor: 'rgba(255,99,132,0.6)' }
+          ]
+        },
+        options: { responsive: true }
+      });
+    }
+    loadMonthly();
+  </script>
+  <table>
+    <tr>
+      <th>日付</th>
+      <th>収支</th>
+      <th>カテゴリー</th>
+      <th>内容</th>
+      <th>金額</th>
+    </tr>
+    <% transactions.forEach(transaction => { %>
+      <tr>
+        <td><%= transaction.date.toLocaleDateString('ja-JP') %></td>
+        <td class="<%= transaction.type === 'INCOME' ? 'income' : 'expense' %>">
+          <%= transaction.type === 'INCOME' ? '収入' : '支出' %>
+        </td>
+        <td><%= transaction.category %></td>
+        <td><%= transaction.title %></td>
+        <td>¥<%= transaction.amount.toLocaleString() %></td>
+        <td>
+          <form action="/transactions/<%= transaction.id %>/delete" method="POST" style="display:inline">
+            <button type="submit">削除</button>
+          </form>
+        </td>
+      </tr>
     <% }) %>
-  </ul>
-  <form action="/users" method="post">
-    <input type="text" name="name" placeholder="名前を入力" required>
-    <button type="submit">追加</button>
-  </form>
+  </table>
+
+  <% if (deletedTransactions && deletedTransactions.length) { %>
+    <h3>最近削除した履歴（取り消し可）</h3>
+    <table>
+      <tr><th>削除日時</th><th>日付</th><th>内容</th><th>金額</th><th>操作</th></tr>
+      <% deletedTransactions.forEach(t => { %>
+        <tr>
+          <td><%= t.deletedAt ? new Date(t.deletedAt).toLocaleString() : '' %></td>
+          <td><%= new Date(t.date).toLocaleDateString('ja-JP') %></td>
+          <td><%= t.title %></td>
+          <td>¥<%= t.amount.toLocaleString() %></td>
+          <td>
+            <form action="/transactions/<%= t.id %>/undo" method="POST" style="display:inline">
+              <button type="submit">取り消す</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </table>
+  <% } %>
 </body>
 </html>

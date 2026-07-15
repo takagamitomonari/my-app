@@ -18,5 +18,6 @@ model Transaction {
   type      String   // "INCOME"(収入) または "EXPENSE"(支出)
   category  String   // カテゴリー（食費、趣味、給料など）
   date      DateTime @default(now()) // 登録日時
+  deletedAt DateTime?
 }
 
